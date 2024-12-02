@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Crypto Issues Explorer</h1>
+            <p class="text-gray-600">Discover and learn from cryptography issues in open source projects</p>
+        </div>
+        <a href="{% url 'crypto_issues:analyze' %}" 
+           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Analyze Your Repository
+        </a>
+    </div>
+
+<!-- Replace the Stats Overview section -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="text-2xl font-bold text-blue-600">{{ stats.total_issues }}</div>
+        <div class="text-sm text-gray-600">Total Issues</div>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="text-2xl font-bold text-green-600">{{ stats.low_issues }}</div>
+        <div class="text-sm text-gray-600">Low Severity</div>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="text-2xl font-bold text-yellow-600">{{ stats.medium_issues }}</div>
+        <div class="text-sm text-gray-600">Medium Severity</div>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="text-2xl font-bold text-orange-600">{{ stats.high_issues }}</div>
+        <div class="text-sm text-gray-600">High Severity</div>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="text-2xl font-bold text-red-600">{{ stats.critical_issues }}</div>
+        <div class="text-sm text-gray-600">Critical Severity</div>
+    </div>
+</div>
+
+<!-- Replace the Complexity Filter section -->
+<div class="mb-8">
+    <h2 class="text-xl mb-4">Filter by Severity</h2>
+    <div class="flex flex-wrap gap-2">
+        {% for value, label in severities %}
+        <a href="?severity={{ value }}" 
+           class="px-4 py-2 rounded-lg {% if current_severity == value %}
+           {% if value == 'critical' %}bg-red-500
+           {% elif value == 'high' %}bg-orange-500
+           {% elif value == 'medium' %}bg-yellow-500
+           {% else %}bg-green-500{% endif %} text-white
+           {% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+        {% if current_severity %}
+        <a href="?" class="px-4 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600">
+            Clear Filter
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Update the severity indicator in the Issues List -->
+<span class="px-3 py-1 rounded-full text-sm
+    {% if issue.severity == 'critical' %}bg-red-100 text-red-800
+    {% elif issue.severity == 'high' %}bg-orange-100 text-orange-800
+    {% elif issue.severity == 'medium' %}bg-yellow-100 text-yellow-800
+    {% else %}bg-green-100 text-green-800{% endif %}">
+    {{ issue.get_severity_display }}
+</span>
+    <!-- Complexity Filter -->
+    <div class="mb-8">
+        <h2 class="text-xl mb-4">Filter by Complexity</h2>
+        <div class="flex flex-wrap gap-2">
+            {% for value, label in complexities %}
+            <a href="?complexity={{ value }}" 
+               class="px-4 py-2 rounded-lg {% if current_complexity == value %}bg-blue-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                {{ label }}
+            </a>
+            {% endfor %}
+            {% if current_complexity %}
+            <a href="?" class="px-4 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600">
+                Clear Filter
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Issues List -->
+    <div class="grid gap-6">
+        {% for issue in issues %}
+        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-semibold mb-1">
+                        <a href="{% url 'crypto_issues:repository-detail' issue.repository.id %}" 
+                           class="text-blue-600 hover:text-blue-800">
+                            {{ issue.repository.full_name }}
+                        </a>
+                    </h3>
+                    <p class="text-gray-600 text-sm">{{ issue.file_path }}:{{ issue.line_number }}</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm
+                    {% if issue.complexity == 'beginner' %}bg-green-100 text-green-800
+                    {% elif issue.complexity == 'intermediate' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ issue.get_complexity_display }}
+                </span>
+            </div>
+
+            <div class="mb-4">
+                <h4 class="font-semibold mb-2">{{ issue.issue_type|title }}</h4>
+                <p class="text-gray-700">{{ issue.description }}</p>
+            </div>
+
+            <div class="bg-gray-50 rounded p-4 mb-4 font-mono text-sm overflow-x-auto">
+                <pre><code>{{ issue.code_snippet }}</code></pre>
+            </div>
+
+            <div class="text-sm text-gray-600">
+                Found {{ issue.created_at|timesince }} ago
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12 bg-gray-50 rounded-lg">
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">No Issues Found</h3>
+            <p class="text-gray-600">
+                {% if current_complexity %}
+                No {{ current_complexity }} issues found. Try a different complexity level or clear the filter.
+                {% else %}
+                No issues found in the database yet.
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-8 flex justify-center space-x-4">
+        {% if page_obj.has_previous %}
+        <a href="?{% if current_complexity %}complexity={{ current_complexity }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Previous
+        </a>
+        {% endif %}
+        
+        {% if page_obj.has_next %}
+        <a href="?{% if current_complexity %}complexity={{ current_complexity }}&{% endif %}page={{ page_obj.next_page_number }}"
+           class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200">
+            Next
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
