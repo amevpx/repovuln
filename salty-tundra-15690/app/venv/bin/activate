@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/kokor/Downloads/attempt4/crypto-issues-finder/venv"
+VIRTUAL_ENV="/Users/kokor/Downloads/FInal Project/analysis repo/salty-tundra-15690/app/venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

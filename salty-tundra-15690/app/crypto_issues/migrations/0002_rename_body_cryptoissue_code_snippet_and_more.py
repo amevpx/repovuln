@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                     ("high", "High"),
                     ("critical", "Critical"),
                 ],
-                default="Review and update the code following security best practices",
+                default="low",
                 max_length=20,
             ),
             preserve_default=False,
@@ -110,7 +110,7 @@ class Migration(migrations.Migration):
                     ("error", "Error"),
                 ],
                 default="pending",
-                max_length=20,
+                max_length=12,
             ),
         ),
         migrations.AlterField(

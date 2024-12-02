@@ -1,4 +1,6 @@
-#!/Users/kokor/Downloads/attempt4/crypto-issues-finder/venv/bin/python
+#!/bin/sh
+'''exec' "/Users/kokor/Downloads/FInal Project/analysis repo/salty-tundra-15690/app/venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

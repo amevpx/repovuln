@@ -1,25 +1,33 @@
 from django.db import models
 from django.utils.text import slugify
+from django.db import models
+from django.utils import timezone
+
+# crypto_issues/models.py
+
+from django.db import models
+from django.utils import timezone
+# crypto_issues/models.py
+
+from django.db import models
+from django.utils import timezone
 
 class Repository(models.Model):
-    name = models.CharField(max_length=200)
-    owner = models.CharField(max_length=100)
-    url = models.URLField()
-    stars = models.IntegerField(default=0)
-    last_analyzed = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=[
+    STATUS_CHOICES = [
         ('pending', 'Pending'),
-        ('analyzing', 'Analyzing'),
+        ('processing', 'Processing'),
         ('completed', 'Completed'),
-        ('error', 'Error')
-    ], default='pending')
-    error_message = models.TextField(blank=True)
+        ('failed', 'Failed'),
+    ]
+
+    owner = models.CharField(max_length=255)  # GitHub owner
+    name = models.CharField(max_length=255)   # Repository name
+    repo_url = models.URLField(unique=True)   # Full repository URL
+    uploaded_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    analysis_result = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.owner}/{self.name}"
-
-    @property
-    def full_name(self):
         return f"{self.owner}/{self.name}"
 
 class CryptoIssue(models.Model):

@@ -30,7 +30,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/Users/kokor/Downloads/attempt4/crypto-issues-finder/venv"
+set -gx VIRTUAL_ENV "/Users/kokor/Downloads/FInal Project/analysis repo/salty-tundra-15690/app/venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

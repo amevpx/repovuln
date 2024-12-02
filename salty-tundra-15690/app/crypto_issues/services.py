@@ -5,6 +5,14 @@ import requests
 import asyncio
 from datetime import datetime
 from .models import Repository, CryptoIssue
+import git
+import os
+from django.conf import settings
+import shutil
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class CryptoAnalyzer:
     def __init__(self, github_token):
@@ -64,33 +72,35 @@ class CryptoAnalyzer:
             )
         }
 
+
     def analyze_repository(self, repo_url):
         match = re.match(r'https://github.com/([^/]+)/([^/]+)', repo_url)
         if not match:
             raise ValueError('Invalid GitHub repository URL')
-        
+
         owner, name = match.groups()
-        
+
+        # Update to use `owner` and `name`
         repo, created = Repository.objects.get_or_create(
             owner=owner,
             name=name,
-            defaults={'url': repo_url}
+            defaults={'repo_url': repo_url}
         )
-        
+
         try:
             repo.status = 'analyzing'
             repo.save()
-            
+
             if asyncio.get_event_loop().is_closed():
                 asyncio.set_event_loop(asyncio.new_event_loop())
             loop = asyncio.get_event_loop()
             loop.run_until_complete(self.analyze_contents_async(repo, f'https://api.github.com/repos/{owner}/{name}/contents'))
-            
+
             repo.status = 'completed'
         except Exception as e:
             repo.status = 'error'
-            repo.error_message = str(e)
-        
+            repo.analysis_result = {'error': str(e)}
+
         repo.save()
         return repo
 
@@ -186,3 +196,37 @@ class CryptoAnalyzer:
             'timing_attack': 'Use constant-time comparison functions when comparing sensitive values like hashes or tokens.'
         }
         return recommendations.get(issue_type, 'Review and update the code following current security best practices')
+
+class GitHubService:
+    def __init__(self, repo_url):
+        self.repo_url = repo_url
+        self.repo_name = self.extract_repo_name()
+        self.clone_dir = os.path.join(settings.BASE_DIR, 'tmp', self.repo_name)
+
+    def extract_repo_name(self):
+        return self.repo_url.rstrip('/').split('/')[-1].replace('.git', '')
+
+    def clone_or_pull_repo(self):
+        if os.path.exists(self.clone_dir):
+            try:
+                repo = git.Repo(self.clone_dir)
+                repo.remotes.origin.pull()
+                logger.info(f"Pulled latest changes for {self.repo_url}")
+            except git.exc.GitError as e:
+                logger.error(f"Error pulling repository {self.repo_url}: {e}")
+                raise
+        else:
+            try:
+                git.Repo.clone_from(self.repo_url, self.clone_dir)
+                logger.info(f"Cloned repository {self.repo_url}")
+            except git.exc.GitError as e:
+                logger.error(f"Error cloning repository {self.repo_url}: {e}")
+                raise
+
+    def cleanup_repo(self):
+        if os.path.exists(self.clone_dir):
+            try:
+                shutil.rmtree(self.clone_dir)
+                logger.info(f"Cleaned up repository directory {self.clone_dir}")
+            except Exception as e:
+                logger.error(f"Error cleaning up repository {self.clone_dir}: {e}")
